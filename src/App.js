@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { Layout, Slider, Card, Form, Input, Button, Checkbox, Divider, Row, Col } from 'antd';
-import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Layout, Slider, Card, Form, Input, Button, Switch, Divider, Row, Col, Modal, Tooltip } from 'antd';
+import { MinusCircleOutlined, PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
 import logo from './logo.svg';
 import './App.css';
@@ -16,33 +16,88 @@ const layout = {
 function App() {
 
   const [form] = Form.useForm();
+  const [canEdit, setCanEdit] = useState(true)
+  const [countDown, setCountDown] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [paused, setPaused] = useState(false)
+
+
+  useEffect(() => {
+    let interval
+    interval = setInterval(() => {
+      /*eslint-disable no-undef*/
+      chrome.storage.sync.get(['timeWindow'], function (data) {
+        /*eslint-enable no-undef*/
+        // console.log("TOOO")
+        const timeWindow = data.timeWindow || [420, 660]
+        var date = new Date();
+        var now = date.getTime();
+        const end = ((new Date()).setHours(0, 0, 0, 0)) + (timeWindow[1] * 60 * 1000)
+        // console.log({ now, end })
+        if (end >= now) {
+          var distance = end - now;
+          var hh = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          var mm = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+          var ss = Math.floor((distance % (1000 * 60)) / 1000);
+          setCountDown(`${hh}:${mm}:${ss}`)
+        } else {
+          setCountDown('')
+        }
+
+        var minutes = date.getMinutes();
+        var hours = date.getHours();
+        var result = (60 * hours) + minutes;
+
+
+        setCanEdit(!(result >= timeWindow[0] && result <= timeWindow[1]))
+      })
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [])
 
   useEffect(() => {
     /*eslint-disable no-undef*/
 
-    chrome.storage.sync.get(['traps', 'target', 'timeWindow'], function (data) {
+    chrome.storage.sync.get(['traps', 'target', 'timeWindow', 'revisitBlock', 'paused'], function (data) {
       /*eslint-enable no-undef*/
-      console.log({ data })
+      setPaused(!!data.paused)
       form.setFieldsValue({
         timeWindow: [420, 660],
         target: 'notion.so',
         traps: [''],
+        revisitBlock: true,
         ...data
       });
     })
-
   }, [])
 
   const onFinish = values => {
     /*eslint-disable no-undef*/
 
-    chrome.storage.sync.set({ ...values }, function () {
+    chrome.storage.sync.set({
+      ...values,
+      target: values.target.replace(/(^\w+:|^)\/\//, ''),
+      traps: values.traps.map(t => t.replace(/(^\w+:|^)\/\//, ''))
+    }, function () {
       /*eslint-enable no-undef*/
 
     })
 
-    console.log('Success:', values);
+    // console.log('Success:', values);
   };
+
+  const handlePause = () => {
+    /*eslint-disable no-undef*/
+    chrome.storage.sync.set({
+      paused: !paused
+    }, function () {
+      /*eslint-enable no-undef*/
+      setPaused(!paused)
+    })
+  }
 
   const onFinishFailed = errorInfo => {
     console.log('Failed:', errorInfo);
@@ -53,7 +108,7 @@ function App() {
       <Content style={{ padding: '50px', display: 'flex', justifyContent: 'center' }}>
         <div>
           <Card
-            title="Muscle Redirect - Stop your fingers from taking you to the wrong website"
+            title="Reflex Blocker - Stop your fingers from taking you to the wrong website"
             bordered={false}
             style={{ width: '100%', maxWidth: 1200 }}
           >
@@ -67,7 +122,7 @@ function App() {
             >
               <Form.Item
                 shouldUpdate
-                label={`Time window`}
+                label={`Focus Window`}
                 name="timeWindow"
               >
                 <Slider
@@ -78,6 +133,17 @@ function App() {
                   max={1440}
                   range
                   disabled={false} />
+              </Form.Item>
+              <Form.Item
+                label={<><span style={{ marginRight: 5 }}>Smart Block (beta)</span>
+                  <Tooltip title="Out of your Focus Window range, Smart Block will help you avoide the traps by allwoing you to access them only once every 30 mins. So you don't close twitter now and open it again after 5 mins ¯\_(ツ)_/¯">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </>}
+                name="revisitBlock"
+                valuePropName="checked"
+              >
+                <Switch />
               </Form.Item>
 
               <Divider />
@@ -160,9 +226,31 @@ function App() {
                 </Col>
               </Row>
               <Form.Item noStyle>
-                <Button type="primary" htmlType="submit">
-                  Save
-              </Button>
+                {paused ?
+                  <>
+                    <Button type="primary" onClick={handlePause}>
+                      Resume
+                  </Button>
+                    <Button style={{ marginLeft: 8 }}  htmlType="submit">
+                      Save
+                    </Button>
+                  </>
+                  :
+                  <>
+                    {
+                      !countDown ?
+                        <Button disabled={!canEdit} type="primary" htmlType="submit">
+                          Save
+                        </Button>
+                        : <>
+                          <>Your focus time ends in {countDown}</>
+                          <Button type="link" onClick={() => setShowModal(true)}>
+                            Pause
+                      </Button>
+                        </>
+                    }
+                  </>
+                }
               </Form.Item>
             </Form>
 
@@ -175,6 +263,30 @@ function App() {
           {' '}jamalx31
           </a>
       </Footer>
+
+      <Modal
+        title="Are you sure you want to waste your time?"
+        visible={showModal}
+        onOk={() => setShowModal(false)}
+        onCancel={() => setShowModal(false)}
+        footer={[
+          <Button key="back"
+            onClick={() => {
+              setShowModal(false)
+              handlePause()
+            }}
+          >
+            pause
+          </Button>,
+          <Button key="submit" type="primary" onClick={() => setShowModal(false)}>
+            I will go back to work
+          </Button>,
+        ]}
+      >
+        <div style={{ width: '100%', textAlign: 'center' }}>
+          <img src="https://i.gifer.com/RMp5.gif" />
+        </div>
+      </Modal>
     </Layout>
   );
 }

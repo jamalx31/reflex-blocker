@@ -1,15 +1,14 @@
 {
-  "name": "Muscle Redirect",
-  "version": "1.0.0",
+  "name": "Reflex Blocker",
+  "version": "1.0.12",
   "manifest_version": 2,
   "description": "Stop your fingers from taking you to the wrong website",
   "icons": {
     "512": "logo160.png"
   },
   "permissions": [
-    "webRequest",
-    "webRequestBlocking",
     "storage",
+    "tabs",
     "<all_urls>"
  ],
  "background": {
