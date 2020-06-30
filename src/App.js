@@ -16,6 +16,7 @@ const layout = {
 function App() {
 
   const [form] = Form.useForm();
+  const [dirty, setDirty] = useState(false)
   const [canEdit, setCanEdit] = useState(true)
   const [countDown, setCountDown] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -83,7 +84,7 @@ function App() {
       traps: values.traps.map(t => t.replace(/(^\w+:|^)\/\//, ''))
     }, function () {
       /*eslint-enable no-undef*/
-
+      setDirty(false)
     })
 
     // console.log('Success:', values);
@@ -118,6 +119,7 @@ function App() {
               name="basic"
               onFinish={onFinish}
               onFinishFailed={onFinishFailed}
+              onFieldsChange={() => setDirty(true)}
               layout="vertical"
             >
               <Form.Item
@@ -134,7 +136,7 @@ function App() {
                   range
                   disabled={false} />
               </Form.Item>
-              <Form.Item
+              {/* <Form.Item
                 label={<><span style={{ marginRight: 5 }}>Smart Block (beta)</span>
                   <Tooltip title="Out of your Focus Window range, Smart Block will help you avoide the traps by allwoing you to access them only once every 30 mins. So you don't close twitter now and open it again after 5 mins ¯\_(ツ)_/¯">
                     <QuestionCircleOutlined />
@@ -144,7 +146,7 @@ function App() {
                 valuePropName="checked"
               >
                 <Switch />
-              </Form.Item>
+              </Form.Item> */}
 
               <Divider />
 
@@ -226,23 +228,23 @@ function App() {
                 </Col>
               </Row>
               <Form.Item noStyle>
-                {paused ?
+                {/* {paused ?
                   <>
                     <Button type="primary" onClick={handlePause}>
                       Resume
                   </Button>
-                    <Button style={{ marginLeft: 8 }}  htmlType="submit">
-                      Save
-                    </Button>
-                  </>
+                <Button disabled={!dirty} style={{ marginLeft: 8 }} htmlType="submit">
+                  Save
+                </Button>
+                </>
                   :
                   <>
                     {
-                      !countDown ?
-                        <Button disabled={!canEdit} type="primary" htmlType="submit">
-                          Save
-                        </Button>
-                        : <>
+                      !countDown ? */}
+                <Button disabled={!dirty} type="primary" htmlType="submit">
+                  Save
+              </Button>
+                {/* : <>
                           <>Your focus time ends in {countDown}</>
                           <Button type="link" onClick={() => setShowModal(true)}>
                             Pause
@@ -250,7 +252,7 @@ function App() {
                         </>
                     }
                   </>
-                }
+                } */}
               </Form.Item>
             </Form>
 
