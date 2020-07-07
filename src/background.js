@@ -57,7 +57,6 @@ function checkUrl(a, b) {
 }
 
 function block(a, b, target) {
-   // console.log("Block")
    chrome.tabs.update(a, {
       url: 'https://' + target
    })
@@ -66,8 +65,6 @@ function block(a, b, target) {
 
 
 chrome.tabs.onUpdated.addListener((tabId, obj, tab) => {
-   // console.log({ tabId, obj, tab })
-   // console.log({ tabId, obj, tab })
    if (obj.url) {
       checkUrl(tabId, new URL(tab.url).hostname)
    }
